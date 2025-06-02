@@ -1,13 +1,15 @@
 import { Button, Heading, MultiStep, Text, TextInput } from "@ignite-ui/react";
 import { Header, Container, Form, FormError } from "./styles";
 import { ArrowRight } from "phosphor-react";
-import { useForm } from "react-hook-form";
+import { set, useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter } from "next/router";
+import { useEffect } from "react";
 
 const registerFormSchema = z.object({
-   username: z
-   .string()
+  username: z
+  .string()
   .min(3, { message: 'O usuário precisa ter pelo menos 3 caracteres.' })
   .regex(/^([a-z\\\\-]+)$/i, { 
     message: 'O usuário pode conter apenas letras e hifens.'
@@ -21,7 +23,8 @@ type RegisterFormData = z.infer<typeof registerFormSchema>
 export default function Register() {
     const { 
         register, 
-        handleSubmit, 
+        handleSubmit,
+        setValue,
         formState: { errors, isSubmitting }, 
     } = useForm<RegisterFormData>({
         resolver: zodResolver(registerFormSchema),
@@ -30,6 +33,14 @@ export default function Register() {
             name: '',
         },
     })
+
+    const router = useRouter();
+
+    useEffect(() => {
+        if (router.query?.username) {
+            setValue('username', String(router.query.username));
+        }
+    }, [router.query?.username, setValue]);
 
     async function handleRegister(data: RegisterFormData) {
         console.log(data);
