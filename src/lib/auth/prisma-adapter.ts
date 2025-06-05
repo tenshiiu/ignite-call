@@ -21,7 +21,7 @@ export function PrismaAdapter(): Adapter {
         emailVerified: null,
       }
     },
-    
+
     async getUserByEmail(email) {
       const user = await prisma.user.findUniqueOrThrow({
             where: {
@@ -38,38 +38,127 @@ export function PrismaAdapter(): Adapter {
         emailVerified: null,
       }
     },
+
     async getUserByAccount({ providerAccountId, provider }) {
-      return
+        const { user } = await prisma.account.findFirstOrThrow({
+            where: {
+                provider_account_id: providerAccountId,
+                provider: provider,
+            },
+            include: {
+                user: true
+            }
+        })
+        
+        return {
+        id: user.id,
+        name: user.name,
+        username: user.username,
+        email: user.email!,
+        avatar_url: user.avatar_url!,
+        emailVerified: null,
+        }
     },
+
     async updateUser(user) {
-      return
+      const prismaUser = await prisma.user.update({
+        where: {
+            id: user.id!,
+        },
+        data: {
+            name: user.name,
+            email: user.email,
+            avatar_url: user.avatar_url,
+        }
+      })
+
+      return {
+        id: prismaUser.id,
+        name: prismaUser.name,
+        username: prismaUser.username,
+        email: prismaUser.email!,
+        avatar_url: prismaUser.avatar_url!,
+        emailVerified: null,
+      }
     },
-    async deleteUser(userId) {
-      return
+
+    async linkAccount(account: import("next-auth/adapters").AdapterAccount) {
+      await prisma.account.create({
+        data: {
+          user_id: account.userId,
+          type: account.type,
+          provider: account.provider,
+          provider_account_id: account.providerAccountId,
+          refresh_token: account.refresh_token,
+          access_token: account.access_token,
+          expires_at: account.expires_at,
+          token_type: account.token_type,
+          scope: account.scope,
+          id_token: account.id_token,
+          session_state: account.session_state,
+        }
+      })
     },
-    async linkAccount(account) {
-      return
-    },
-    async unlinkAccount({ providerAccountId, provider }) {
-      return
-    },
+    
     async createSession({ sessionToken, userId, expires }) {
-      return
+      await prisma.session.create({
+        data: {
+            user_id: userId,
+            expires,
+            session_token: sessionToken,
+        }
+      })
+
+      return {
+        userId,
+        expires,
+        sessionToken,
+      }
     },
+
     async getSessionAndUser(sessionToken) {
-      return
+      const { user, ...session } = await prisma.session.findUniqueOrThrow({
+        where: {
+            session_token: sessionToken,
+        },
+        include: {
+            user: true,
+        }
+      })
+
+      return {
+        session: {
+            userId: session.user_id,
+            expires: session.expires,
+            sessionToken: session.session_token
+        },
+        user: {
+        id: user.id,
+        name: user.name,
+        username: user.username,
+        email: user.email!,
+        avatar_url: user.avatar_url!,
+        emailVerified: null,
+        },
+      }
     },
-    async updateSession({ sessionToken }) {
-      return
-    },
-    async deleteSession(sessionToken) {
-      return
-    },
-    async createVerificationToken({ identifier, expires, token }) {
-      return
-    },
-    async useVerificationToken({ identifier, token }) {
-      return
+
+    async updateSession({ sessionToken, userId, expires }) {
+      const prismaSession = await prisma.session.update({
+        where: {
+            session_token: sessionToken,
+        },
+        data: {
+            user_id: userId,
+            expires,
+        }
+      })
+
+      return {
+        sessionToken: prismaSession.session_token,
+        userId: prismaSession.user_id,
+        expires: prismaSession.expires,
+      }
     },
   }
 }
