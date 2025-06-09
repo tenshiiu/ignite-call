@@ -28,6 +28,7 @@ export default function Register() {
         handleSubmit,
         setValue,
         formState: { errors, isSubmitting }, 
+        setError,
     } = useForm<RegisterFormData>({
         resolver: zodResolver(registerFormSchema),
         defaultValues: {
@@ -54,7 +55,7 @@ export default function Register() {
             await router.push('/register/connect-calendar')
         } catch (err) {
             if(err instanceof AxiosError && err?.response?.data?.message) {
-                alert(err.response.data.message)
+                setError('username', { message: err.response.data.message })
                 return
             }
 

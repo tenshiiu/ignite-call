@@ -30,7 +30,21 @@ export const buildNextAuthOptions = (
       }
 
       return true
-    }
+    },
+
+    async session({ session, user }) {
+      return {
+        ...session,
+        user: {
+          ...session.user,
+          id: user.id,
+          name: user.name ?? null,
+          username: user.username ?? null,
+          email: user.email ?? null,
+          avatar_url: user.avatar_url ?? null,
+        },
+      }
+    },
   }
     }
 };
