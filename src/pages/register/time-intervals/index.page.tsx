@@ -22,6 +22,7 @@ import {
   IntervalItem,
 } from './styles'
 import { convertTimeStringToMinutes } from '../../../utils/conver-time-string-to-minutes'
+import { api } from '../../../lib/axios'
 
 const timeIntervalsFormSchema = z.object({
   intervals: z
@@ -93,9 +94,12 @@ export default function TimeIntervals() {
 
   const intervals = watch('intervals')
 
-  async function handleSetTimeIntervals(data: TimeIntervalsFormOutput) {
-    console.log(data)
-  }
+  async function handleSetTimeIntervals(data: any) {
+    const { intervals } = data as TimeIntervalsFormOutput
+
+    await api.post('/users/time-intervals', {
+      intervals,
+    })
 
   return (
     <Container>
@@ -136,14 +140,14 @@ export default function TimeIntervals() {
                     size="sm"
                     type="time"
                     step={60}
-                    disabled={intervals[index].enabled === false}
+                    disabled={fields[index].enabled === false}
                     {...register(`intervals.${index}.startTime`)}
                   />
                   <TextInput
                     size="sm"
                     type="time"
                     step={60}
-                    disabled={intervals[index].enabled === false}
+                    disabled={fields[index].enabled === false}
                     {...register(`intervals.${index}.endTime`)}
                   />
                 </IntervalInputs>
@@ -163,5 +167,5 @@ export default function TimeIntervals() {
       </IntervalBox>
     </Container>
   )
-
+  }
 }
