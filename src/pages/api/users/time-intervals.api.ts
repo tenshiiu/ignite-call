@@ -1,27 +1,51 @@
-import { NextApiRequest, NextApiResponse } from "next";
+import { NextApiRequest, NextApiResponse } from 'next'
+import { unstable_getServerSession } from 'next-auth'
+import { z } from 'zod'
+import { prisma } from '../../../lib/prisma'
+import { buildNextAuthOptions } from '../auth/[...nextauth].api'
+
+const timeIntervalsBodySchema = z.object({
+  intervals: z.array(
+    z.object({
+      weekDay: z.number(),
+      startTimeInMinutes: z.number(),
+      endTimeInMinutes: z.number(),
+    }),
+  ),
+})
 
 export default async function handler(
-    req: NextApiRequest, 
-    res: NextApiResponse,
+  req: NextApiRequest,
+  res: NextApiResponse,
 ) {
-    if (req.method !== 'POST') {
-        return res.status(405).json({ message: 'Method not allowed' });
-    }
-    
-    const { intervals } = req.body;
-    
-    if (!Array.isArray(intervals) || intervals.length === 0) {
-        return res.status(400).json({ message: 'Intervals are required.' });
-    }
-    
-    try {
-        // Aqui você pode salvar os intervalos no banco de dados
-        // Exemplo fictício:
-        // await prisma.timeInterval.createMany({ data: intervals });
-    
-        return res.status(201).json({ message: 'Time intervals saved successfully.' });
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({ message: 'Error saving time intervals.' });
-    }
+  if (req.method !== 'POST') {
+    return res.status(405).end()
+  }
+
+  const session = await unstable_getServerSession(
+    req,
+    res,
+    buildNextAuthOptions(req, res),
+  )
+
+  if (!session) {
+    return res.status(401).end()
+  }
+
+  const { intervals } = timeIntervalsBodySchema.parse(req.body)
+
+  await Promise.all(
+    intervals.map((interval) => {
+      return prisma.userTimeInterval.create({
+        data: {
+          week_day: interval.weekDay,
+          time_start_in_minutes: interval.startTimeInMinutes,
+          time_end_in_minutes: interval.endTimeInMinutes,
+          user_id: session.user.id,
+        },
+      })
+    }),
+  )
+
+  return res.status(201).end()
 }
